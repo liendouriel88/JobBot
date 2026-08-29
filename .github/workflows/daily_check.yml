@@ -4,7 +4,8 @@ on:
   schedule:
     # 12:00 UTC = 09:00 in Argentina (ART, UTC-3). Adjust if you want a
     # different time — each line is "minute hour day month weekday".
-    - cron: "0 12 * * *"
+    - cron: "0 13 * * *"
+    - cron: "0 21 * * *"
   workflow_dispatch: {}   # lets you trigger it manually from the Actions tab
 
 permissions:
