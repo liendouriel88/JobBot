@@ -206,9 +206,22 @@ def fetch_jobs(query):
 
 def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    # Telegram caps messages at 4096 chars; split into chunks if needed.
-    for i in range(0, len(text), 4000):
-        chunk = text[i:i + 4000]
+    # Telegram caps messages at 4096 chars. Split on line breaks (never
+    # mid-line) so a chunk boundary can't fall inside a <b>...</b> pair.
+    lines = text.split("\n")
+    chunks = []
+    current = ""
+    for line in lines:
+        candidate = current + ("\n" if current else "") + line
+        if len(candidate) > 4000 and current:
+            chunks.append(current)
+            current = line
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+
+    for chunk in chunks:
         resp = requests.post(url, data={
             "chat_id": TELEGRAM_CHAT_ID,
             "text": chunk,
