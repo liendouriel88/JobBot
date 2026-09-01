@@ -215,6 +215,8 @@ def send_telegram_message(text):
             "parse_mode": "HTML",
             "disable_web_page_preview": True,
         }, timeout=30)
+        if not resp.ok:
+            print(f"[telegram error] status={resp.status_code} body={resp.text}")
         resp.raise_for_status()
 
 
