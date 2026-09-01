@@ -14,6 +14,7 @@ Designed to run on a schedule via GitHub Actions (see
 import os
 import json
 import hashlib
+import html
 import requests
 
 # ---------------------------------------------------------------------------
@@ -226,10 +227,10 @@ def get_employment_type(job):
 
 
 def format_job(job, matched_skills=None):
-    title = job.get("title") or "Untitled"
-    company = job.get("company_name") or ""
-    location = job.get("location") or ""
-    employment_type = get_employment_type(job)
+    title = html.escape(job.get("title") or "Untitled")
+    company = html.escape(job.get("company_name") or "")
+    location = html.escape(job.get("location") or "")
+    employment_type = html.escape(get_employment_type(job))
     link = None
     for opt in job.get("apply_options", []) or []:
         if opt.get("link"):
