@@ -15,6 +15,7 @@ import os
 import json
 import hashlib
 import html
+import re
 import requests
 
 # ---------------------------------------------------------------------------
@@ -50,7 +51,17 @@ US_ONLY_EXCLUDE_WORDS = [
     "based in the usa", "based in the us", "eligible to work in the united states",
     "us based only", "within the united states", "us time zones only",
     "must be based in the u.s", "candidates must be located in the us",
+    "us only", "u.s. only", "usa only", "united states only",
+    "us-based", "u.s.-based", "must live in the us", "must reside in the us",
+    "us citizens", "us residents", "w-2", "contiguous united states",
 ]
+
+US_STATE_CODES = {
+    "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN",
+    "IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV",
+    "NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN",
+    "TX","UT","VT","VA","WA","WV","WI","WY","DC",
+}
 
 # Common phrasing patterns in scam/fake job listings.
 SCAM_EXCLUDE_WORDS = [
@@ -112,6 +123,16 @@ SEARCHES = [
             "billing", "bilingual", "spanish", "data entry",
         ],
     },
+    {
+        "name": "Sales",
+        "query": "bilingual sales representative remote",
+        "exclude_words": [],
+        "skill_keywords": [
+            "sales", "inside sales", "lead generation", "crm",
+            "appointment setting", "cold calling", "customer service",
+            "bilingual", "spanish", "healthcare", "scheduling",
+        ],
+    },
 ]
 
 
@@ -167,8 +188,22 @@ def is_blocked_company(job):
     return any(blocked in company for blocked in BLOCKED_COMPANIES)
 
 
+def is_us_location(job):
+    """True if the listing's location field is a US place ("United States",
+    "Miami, FL"). Remote listings that just say "Anywhere" are not caught
+    here, so they still pass."""
+    loc = (job.get("location") or "").strip()
+    low = loc.lower()
+    if "united states" in low or low in ("us", "usa", "u.s."):
+        return True
+    m = re.search(r",\s*([A-Z]{2})\b", loc)
+    return bool(m and m.group(1) in US_STATE_CODES)
+
+
 def passes_filters(job, exclude_words):
     if is_blocked_company(job):
+        return False
+    if is_us_location(job):
         return False
     if contains_excluded_word(job, exclude_words):
         return False
@@ -192,6 +227,7 @@ def fetch_jobs(query):
         "engine": "google_jobs",
         "q": query,
         "hl": "es",
+        "chips": "date_posted:today",  # only listings from the past day
         "api_key": SERPAPI_KEY,
     }
     resp = requests.get("https://serpapi.com/search", params=params, timeout=30)
